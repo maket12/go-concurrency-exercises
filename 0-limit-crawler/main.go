@@ -49,6 +49,7 @@ func Crawl(url string, depth int, wg *sync.WaitGroup) {
 
 func main() {
 	defer rate.Stop()
+
 	var wg sync.WaitGroup
 
 	wg.Add(1)
