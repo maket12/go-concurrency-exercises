@@ -13,9 +13,45 @@
 
 package main
 
+import (
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+)
+
+type safeCounter struct {
+	mu      sync.Mutex
+	counter int
+}
+
+func catchAndStop(proc *MockProcess, c *safeCounter, sigs chan os.Signal) {
+	for {
+		_, ok := <-sigs
+		if ok {
+			c.mu.Lock()
+
+			c.counter++
+			if c.counter == 1 {
+				proc.Stop()
+			} else {
+				os.Exit(0)
+			}
+
+			c.mu.Unlock()
+		}
+	}
+}
+
 func main() {
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGINT)
+
 	// Create a process
 	proc := MockProcess{}
+	counter := safeCounter{}
+
+	go catchAndStop(&proc, &counter, sigs)
 
 	// Run the process (blocking)
 	proc.Run()
